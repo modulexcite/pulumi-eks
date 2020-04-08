@@ -201,6 +201,27 @@ func TestAccRoleKubeconfig(t *testing.T) {
 	integration.ProgramTest(t, &test)
 }
 
+func TestAccAwsProfile(t *testing.T) {
+	// Use alternate ALT_AWS_PROFILE set in Travis environment.
+	// ALT_AWS_PROFILE is intentionally separated to use default AWS creds set
+	// in environment for all other tests.
+	profileName := os.Getenv("ALT_AWS_PROFILE")
+	env := []string{fmt.Sprintf("%s=%s", "AWS_PROFILE", profileName)}
+	test := getJSBaseOptions(t).
+		With(integration.ProgramTestOptions{
+			Dir: path.Join(getCwd(t), "aws-profile"),
+			Env: env,
+			ExtraRuntimeValidation: func(t *testing.T, info integration.RuntimeValidationStackInfo) {
+				utils.RunEKSSmokeTest(t,
+					info.Deployment.Resources,
+					info.Outputs["kubeconfig"],
+				)
+			},
+		})
+
+	integration.ProgramTest(t, &test)
+}
+
 func TestAccCluster_withUpdate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
